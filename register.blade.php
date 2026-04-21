@@ -48,17 +48,11 @@
                         <x-input-error :messages="$errors->get('password')" class="mt-2" />
                     </div>
 
-                    <div class="mb-2">
+                    <div class="mb-4">
                         <x-input-label for="password_confirmation" :value="__('Confirm Password:')" />
                         <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Type here"
                                class="w-full bg-white border-none rounded mt-1 px-3 py-1.5 text-xs text-gray-900 focus:ring-2 focus:ring-blue-500 shadow-sm" />
                         <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-                    </div>
-
-                    <div class="flex justify-end mb-6">
-                        <a class="text-sm text-gray-500 hover:text-gray-800 italic" href="{{ route('login') }}">
-                            Already registered?
-                        </a>
                     </div>
 
                     <button type="submit" class="w-full bg-gradient-to-r from-[#7BF0FF] to-[#7E98FF] text-white font-bold text-xs py-3 rounded-full shadow-md hover:opacity-90 tracking-wide">

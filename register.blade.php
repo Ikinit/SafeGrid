@@ -1,7 +1,7 @@
 <x-guest-layout>
     <div class="relative min-h-screen w-full min-w-[670px] flex items-center justify-center overflow-hidden bg-white">
         
-        <img rel="preload" src="{{ asset('Vector.png') }}" alt="" class="absolute left-0 top-0 h-screen object-contain z-0" />
+        <img rel="preload" src="{{ asset('Vector.png') }}" alt="" class="absolute left-0 top-0 h-screen h-full object-contain z-0" />
         
         <div class="absolute top-8 right-12 flex space-x-6">
             <a href="#" class="text-sm font-medium text-gray-700 hover:text-gray-900">Guest</a>

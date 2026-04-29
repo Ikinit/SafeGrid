@@ -45,4 +45,20 @@ Route::middleware(['auth', 'check.household'])->group(function () {
     Route::delete('/family/roles/{roleId}/remove', [FamilyProfileController::class, 'removeRoleTask'])->name('family.roles.remove');
 });
 
+// Go Bag
+Route::middleware(['auth'])->group(function () {
+    
+    Route::get('/go-bag', [GoBagController::class, 'index'])->name('gobag.index');
+
+    Route::post('/gobag/personal', [GoBagController::class, 'storePersonal'])->name('gobag.personal.store');
+    Route::patch('/gobag/personal/{item}', [GoBagController::class, 'updatePersonal'])->name('gobag.personal.update');
+    Route::delete('/gobag/personal/{item}', [GoBagController::class, 'destroyPersonal'])->name('gobag.personal.destroy');
+
+    Route::middleware(['check.household'])->group(function () {
+        Route::post('/gobag/family', [GoBagController::class, 'storeFamily'])->name('gobag.family.store');
+        Route::patch('/gobag/family/{item}', [GoBagController::class, 'updateFamily'])->name('gobag.family.update');
+        Route::delete('/gobag/family/{item}', [GoBagController::class, 'destroyFamily'])->name('gobag.family.destroy');
+    });
+});
+
 require __DIR__.'/auth.php';

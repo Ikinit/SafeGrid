@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('family.index')" :active="request()->routeIs('family.*')">
                         {{ __('Family Profile') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('gobag.index')" :active="request()->routeIs('gobag.*')">
+                        {{ __('Go Bag') }}
+                    </x-nav-link>
                 </div>
             </div>
 

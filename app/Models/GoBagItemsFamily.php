@@ -2,12 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class GoBagItemsFamily extends Model
 {
-    use HasFactory;
 
     protected $table = 'go_bag_items_family';
 

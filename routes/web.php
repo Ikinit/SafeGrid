@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FamilyProfileController;
+use App\Http\Controllers\GoBagController;
 use Illuminate\Support\Facades\Route;
 
 // Guest

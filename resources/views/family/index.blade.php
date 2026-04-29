@@ -855,7 +855,7 @@
 
                     {{-- Remove Button (Hidden for the Owner) --}}
                     @if(!$member->is_owner)
-                        <form method="POST" action="{{ route('family.members.remove', $member->id) }}" style="margin: 0;">
+                        <form method="POST" action="{{ route('family.member.remove', $member->id) }}" style="margin: 0;">
                             @csrf @method('DELETE')
                             <button type="submit" 
                                     style="background: #fee2e2; color: #ef4444; border: none; border-radius: .375rem; padding: .35rem .75rem; font-size: .75rem; font-weight: 600; cursor: pointer; transition: background .15s;"

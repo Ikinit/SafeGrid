@@ -245,7 +245,30 @@ class FamilyProfileController extends Controller
     // Remove a member
     public function removeMember(FamilyMember $member)
     {
+        // Get the user being removed
+        $removedUser = $member->user;
+
+        // Delete the member record
         $member->delete();
+
+        // If their active household was this one, clear it or switch to another
+            if ($removedUser && $removedUser->active_family_profile_id === $member->family_profile_id) {
+            // Check if they have another household
+            $anotherHousehold = $removedUser->familyMembers()->first();
+
+            if ($anotherHousehold) {
+                // Switch them to another household they belong to
+                $removedUser->update([
+                    'active_family_profile_id' => $anotherHousehold->family_profile_id
+                ]);
+            } else {
+                // No other household — send them back to onboarding
+                $removedUser->update([
+                    'active_family_profile_id' => null
+                ]);
+            }
+        }
+
         return back()->with('success', 'Member removed.');
     }
 

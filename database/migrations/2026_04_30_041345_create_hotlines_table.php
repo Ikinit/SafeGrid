@@ -8,20 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('emergency_contacts', function (Blueprint $table) {
+        Schema::create('hotlines', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('family_profile_id')->nullable();
             $table->string('name');
             $table->string('contact_number');
+            $table->string('location'); // e.g. "Tacloban", "Cebu City", "National"
+            $table->string('category')->default('General'); // e.g. BFP, PNP, CDRRMO
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('emergency_contacts');
+        Schema::dropIfExists('hotlines');
     }
 };

@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('gobag.index')" :active="request()->routeIs('gobag.*')">
                         {{ __('Go Bag') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('contacts.index')" :active="request()->routeIs('contacts.*')">
+                        {{ __('Contacts') }}
+                    </x-nav-link>
                 </div>
             </div>
 

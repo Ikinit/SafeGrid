@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FamilyProfileController;
 use App\Http\Controllers\GoBagController;
+use App\Http\Controllers\EmergencyContactController;
 use Illuminate\Support\Facades\Route;
 
 // Guest
@@ -44,6 +45,12 @@ Route::middleware(['auth', 'check.household'])->group(function () {
     Route::put('/family/members/role', [FamilyProfileController::class, 'assignRole'])->name('family.members.role');
     Route::delete('/family/members/{id}', [FamilyProfileController::class, 'removeMember'])->name('family.members.remove');
     Route::delete('/family/roles/{roleId}/remove', [FamilyProfileController::class, 'removeRoleTask'])->name('family.roles.remove');
+    Route::get('/contacts', [EmergencyContactController::class, 'index'])->name('contacts.index');
+    Route::post('/contacts/personal', [EmergencyContactController::class, 'storePersonal'])->name('contacts.personal.store');
+    Route::post('/contacts/household', [EmergencyContactController::class, 'storeHousehold'])->name('contacts.household.store');
+    Route::put('/contacts/{contact}', [EmergencyContactController::class, 'update'])->name('contacts.update');
+    Route::delete('/contacts/{contact}', [EmergencyContactController::class, 'destroy'])->name('contacts.destroy');
+    Route::get('/contacts/hotlines', [EmergencyContactController::class, 'filterHotlines'])->name('contacts.hotlines');
 });
 
 // Go Bag

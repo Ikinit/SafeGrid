@@ -51,7 +51,7 @@ class GoBagController extends Controller
     {
         if ($item->user_id !== Auth::id()) abort(403);
 
-        $item->update(['is_packed' => $request->is_packed]);
+        $item->update(['is_packed' => $request->has('is_packed') && $request->is_packed == '1' ? true : false]);
 
         return back()->with('success', 'Item updated!');
     }

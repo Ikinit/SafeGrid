@@ -12,9 +12,27 @@ class FamilyProfileController extends Controller
 {
     public function onboarding()
     {
-        $invitations = auth()->user()->pendingInvitations()->with('familyProfile')->get();
-        $households  = auth()->user()->familyProfiles;
-        return view('family.onboarding', compact('invitations', 'households'));
+        $user = auth()->user();
+        
+        // If user is already part of a household, redirect to family index
+        if ($user->active_family_profile_id) {
+            $stillMember = $user->familyMembers()
+                                ->where('family_profile_id', $user->active_family_profile_id)
+                                ->exists();
+            
+            if ($stillMember) {
+                return redirect()->route('family.index');
+            }
+        }
+
+        $invitations = $user->pendingInvitations()->with('familyProfile')->get();
+        $pendingRequests = HouseholdInvitation::where('invited_user_id', $user->id)
+                                            ->whereNull('invited_by')
+                                            ->where('status', 'pending')
+                                            ->with('familyProfile')
+                                            ->get();
+        $households  = $user->familyProfiles;
+        return view('family.onboarding', compact('invitations', 'pendingRequests', 'households'));
     }
 
     public function index()
@@ -22,7 +40,12 @@ class FamilyProfileController extends Controller
         $user       = auth()->user();
         $profile    = $user->activeFamilyProfile->load('members.user');
         $households = $user->familyProfiles;
-        return view('family.index', compact('profile', 'households'));
+        $joinRequests = HouseholdInvitation::where('family_profile_id', $profile->id)
+                                           ->whereNull('invited_by')
+                                           ->where('status', 'pending')
+                                           ->with('invitedUser')
+                                           ->get();
+        return view('family.index', compact('profile', 'households', 'joinRequests'));
     }
 
     // Switch active household
@@ -93,17 +116,21 @@ class FamilyProfileController extends Controller
             return back()->withErrors(['household_code' => 'You are already in this household.']);
         }
 
-        FamilyMember::create([
+        $alreadyRequested = HouseholdInvitation::where('family_profile_id', $profile->id)
+                                               ->where('invited_user_id', auth()->id())
+                                               ->where('status', 'pending')
+                                               ->exists();
+        if ($alreadyRequested) {
+            return back()->withErrors(['household_code' => 'You already have a pending join request for this household.']);
+        }
+
+        HouseholdInvitation::create([
             'family_profile_id' => $profile->id,
-            'user_id'           => auth()->id(),
-            'role'              => 'Member',
-            'is_owner'          => false,
+            'invited_user_id'   => auth()->id(),
+            'invited_by'        => null,
         ]);
 
-        auth()->user()->update(['active_family_profile_id' => $profile->id]);
-
-        return redirect()->route('family.index')
-                         ->with('success', 'Joined household successfully!');
+        return back()->with('success', 'Join request sent! Please wait for the household owner to approve.');
     }
 
     // Invite a member by username
@@ -150,20 +177,27 @@ class FamilyProfileController extends Controller
     {
         $invitation->update(['status' => 'accepted']);
 
-        FamilyMember::create([
-            'family_profile_id' => $invitation->family_profile_id,
-            'user_id'           => auth()->id(),
-            'role'              => 'Member',
-            'is_owner'          => false,
-        ]);
+        // Check if already a member (prevent duplicate)
+        $alreadyMember = FamilyMember::where('family_profile_id', $invitation->family_profile_id)
+                                    ->where('user_id', auth()->id())
+                                    ->exists();
 
-        $user = auth()->user();
-        if (!$user->active_family_profile_id) {
-            $user->update(['active_family_profile_id' => $invitation->family_profile_id]);
+        if (!$alreadyMember) {
+            FamilyMember::create([
+                'family_profile_id' => $invitation->family_profile_id,
+                'user_id'           => auth()->id(),
+                'role'              => 'Member',
+                'is_owner'          => false,
+            ]);
         }
 
+        // Always switch to the newly accepted household
+        auth()->user()->update([
+            'active_family_profile_id' => $invitation->family_profile_id
+        ]);
+
         return redirect()->route('family.index')
-                         ->with('success', 'You joined the household!');
+                        ->with('success', 'You joined the household!');
     }
 
     // Decline invitation
@@ -171,6 +205,77 @@ class FamilyProfileController extends Controller
     {
         $invitation->update(['status' => 'declined']);
         return back()->with('success', 'Invitation declined.');
+    }
+
+    // Cancel pending join request
+    public function cancelJoinRequest(HouseholdInvitation $invitation)
+    {
+        if ($invitation->invited_user_id !== auth()->id()) {
+            abort(403, 'You cannot cancel this request.');
+        }
+
+        $invitation->delete();
+        return back()->with('success', 'Join request cancelled.');
+    }
+
+    // Owner approves join request from waiting room
+    public function approveJoinRequest(HouseholdInvitation $invitation)
+    {
+        $user    = auth()->user();
+        $profile = $user->activeFamilyProfile;
+
+        if ($invitation->family_profile_id !== $profile->id) {
+            abort(403, 'This is not your household.');
+        }
+
+        if (!$user->activeMember()->is_owner) {
+            abort(403, 'Only the owner can approve join requests.');
+        }
+
+        $invitation->update(['status' => 'accepted']);
+
+        // Check if already a member
+        $alreadyMember = FamilyMember::where('family_profile_id', $profile->id)
+                                    ->where('user_id', $invitation->invited_user_id)
+                                    ->exists();
+
+        if (!$alreadyMember) {
+            FamilyMember::create([
+                'family_profile_id' => $profile->id,
+                'user_id'           => $invitation->invited_user_id,
+                'role'              => 'Member',
+                'is_owner'          => false,
+            ]);
+        }
+
+        // Update the approved user's active household
+        $approvedUser = User::find($invitation->invited_user_id);
+        if ($approvedUser) {
+            $approvedUser->update([
+                'active_family_profile_id' => $profile->id
+            ]);
+        }
+
+        return back()->with('success', 'Join request approved!');
+    }
+
+    // Owner declines join request from waiting room
+    public function declineJoinRequest(HouseholdInvitation $invitation)
+    {
+        $user = auth()->user();
+        $profile = $user->activeFamilyProfile;
+
+        if ($invitation->family_profile_id !== $profile->id) {
+            abort(403, 'This is not your household.');
+        }
+
+        if (!$user->activeMember()->is_owner) {
+            abort(403, 'Only the owner can decline join requests.');
+        }
+
+        $invitation->update(['status' => 'declined']);
+
+        return back()->with('success', 'Join request declined.');
     }
 
     // Update household

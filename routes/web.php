@@ -28,6 +28,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding', [FamilyProfileController::class, 'onboarding'])->name('onboarding.index');
     Route::post('/onboarding/create', [FamilyProfileController::class, 'createHousehold'])->name('onboarding.create');
     Route::post('/onboarding/join', [FamilyProfileController::class, 'joinHousehold'])->name('onboarding.join');
+    Route::post('/family/invitation/{invitation}/accept', [FamilyProfileController::class, 'acceptInvitation'])->name('family.invitation.accept');
+    Route::post('/family/invitation/{invitation}/decline', [FamilyProfileController::class, 'declineInvitation'])->name('family.invitation.decline');
+    Route::delete('/family/invitation/{invitation}/cancel', [FamilyProfileController::class, 'cancelJoinRequest'])->name('family.invitation.cancel');
 });
 
 // Family Profile
@@ -37,8 +40,8 @@ Route::middleware(['auth', 'check.household'])->group(function () {
     Route::delete('/family/delete', [FamilyProfileController::class, 'deleteHousehold'])->name('family.delete');
     Route::post('/family/switch/{profile}', [FamilyProfileController::class, 'switchHousehold'])->name('family.switch');
     Route::post('/family/invite', [FamilyProfileController::class, 'inviteMember'])->name('family.invite');
-    Route::post('/family/invitation/{invitation}/accept', [FamilyProfileController::class, 'acceptInvitation'])->name('family.invitation.accept');
-    Route::post('/family/invitation/{invitation}/decline', [FamilyProfileController::class, 'declineInvitation'])->name('family.invitation.decline');
+    Route::post('/family/invitation/{invitation}/approve-request', [FamilyProfileController::class, 'approveJoinRequest'])->name('family.invitation.approve-request');
+    Route::post('/family/invitation/{invitation}/decline-request', [FamilyProfileController::class, 'declineJoinRequest'])->name('family.invitation.decline-request');
     Route::put('/family/member/{member}/role', [FamilyProfileController::class, 'updateRole'])->name('family.member.role');
     Route::delete('/family/member/{member}', [FamilyProfileController::class, 'removeMember'])->name('family.member.remove');
     Route::post('/family/location', [FamilyProfileController::class, 'updateLocation'])->name('family.location');

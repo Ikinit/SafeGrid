@@ -25,6 +25,11 @@ class HouseholdInvitation extends Model
         return $this->belongsTo(User::class, 'invited_user_id');
     }
 
+    public function invitee()
+    {
+        return $this->invitedUser();
+    }
+
     public function invitedBy()
     {
         return $this->belongsTo(User::class, 'invited_by');

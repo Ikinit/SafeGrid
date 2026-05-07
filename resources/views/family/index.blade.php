@@ -664,7 +664,32 @@
         {{-- Waiting Room tab --}}
         <div class="fp-tab-panel active" id="tab-waiting">
             @php $pending = $profile->invitations()->where('status','pending')->get(); @endphp
-            @if($pending->isEmpty())
+            
+            {{-- Join Requests (pending from household code) --}}
+            @if($joinRequests->count())
+                <p style="font-size:.75rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">Join Requests</p>
+                @foreach($joinRequests as $req)
+                    <div class="fp-waiting-item" style="padding:.6rem .5rem;">
+                        <div class="fp-member-avatar" style="width:28px;height:28px;font-size:.75rem;">
+                            {{ strtoupper(substr($req->invitedUser->username ?? '?', 0, 1)) }}
+                        </div>
+                        <span style="flex:1;">{{ $req->invitedUser->username ?? 'Unknown' }} <span style="font-size:.7rem;color:#94a3b8;">(via code)</span></span>
+                        <div style="display:flex;gap:.3rem;">
+                            <form method="POST" action="{{ route('family.invitation.approve-request', $req) }}" style="display:inline;">
+                                @csrf
+                                <button type="submit" style="background:#22c55e;color:white;border:none;border-radius:.375rem;padding:.25rem .5rem;font-size:.7rem;cursor:pointer;white-space:nowrap;">Approve</button>
+                            </form>
+                            <form method="POST" action="{{ route('family.invitation.decline-request', $req) }}" style="display:inline;">
+                                @csrf
+                                <button type="submit" style="background:#ef4444;color:white;border:none;border-radius:.375rem;padding:.25rem .5rem;font-size:.7rem;cursor:pointer;white-space:nowrap;">Decline</button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+
+            {{-- Pending Invitations (from invite tab) --}}
+            @if($pending->isEmpty() && $joinRequests->isEmpty())
                 <p style="text-align:center;color:#94a3b8;font-size:.83rem;padding:1.5rem 0;">No pending invitations…</p>
             @else
                 @foreach($pending as $inv)

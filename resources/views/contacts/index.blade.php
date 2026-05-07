@@ -13,20 +13,13 @@
     .ct-btn-pill:hover { background: #2563eb; }
     .ct-btn-pill--gray { background: #93c5fd; color: #1e3a5f; }
     .ct-btn-pill--gray:hover { background: #60a5fa; }
-    .ct-contact-row { display: flex; align-items: center; justify-content: space-between; padding: .65rem .75rem; background: #bfdbfe; border-radius: .625rem; margin-bottom: .5rem; }
-    .ct-contact-name { font-size: .85rem; font-weight: 600; color: #1e3a5f; }
+    .ct-contact-row { display: flex; align-items: center; justify-content: space-between; padding: .65rem .75rem; background: #bfdbfe; border-radius: .625rem; margin-bottom: .5rem; }    .ct-contact-name { font-size: .85rem; font-weight: 600; color: #1e3a5f; }
     .ct-contact-number { font-size: .82rem; color: #334155; background: #fff; padding: .25rem .75rem; border-radius: .5rem; }
-    .ct-contact-actions { display: flex; gap: .4rem; margin-left: .5rem; }
-    .ct-icon-btn { background: none; border: none; cursor: pointer; color: #64748b; padding: .2rem; border-radius: .375rem; }
-    .ct-icon-btn:hover { color: #3b82f6; }
-    .ct-icon-btn--red:hover { color: #ef4444; }
-    .ct-icon-btn svg { width: 14px; height: 14px; }
     .ct-empty { text-align: center; color: #93c5fd; font-size: .82rem; padding: 1.5rem 0; }
     .ct-select { border: none; background: #bfdbfe; border-radius: .5rem; padding: .3rem .6rem; font-size: .82rem; color: #1e3a5f; font-weight: 600; cursor: pointer; }
     .ct-hotline-row { display: flex; align-items: center; justify-content: space-between; padding: .65rem .75rem; background: #bfdbfe; border-radius: .625rem; margin-bottom: .5rem; }
     .ct-hotline-name { font-size: .85rem; font-weight: 600; color: #1e3a5f; }
     .ct-hotline-number { font-size: .82rem; color: #334155; background: #fff; padding: .25rem .75rem; border-radius: .5rem; }
-    /* Modal */
     .ct-modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 50; align-items: center; justify-content: center; }
     .ct-modal-bg.open { display: flex; }
     .ct-modal { background: #fff; border-radius: 1rem; padding: 1.5rem; width: min(420px, 90vw); box-shadow: 0 8px 32px rgba(0,0,0,.18); position: relative; }
@@ -51,51 +44,128 @@
 
     <div class="ct-panels">
 
-        {{-- LEFT: Personal Contacts --}}
-        <div class="ct-card">
-            <div class="ct-card-header">
-                <span class="ct-card-title">Personal Contacts</span>
-                <div style="display:flex;gap:.4rem;">
-                    <button class="ct-btn-pill"
-                            onclick="openModal('addPersonalModal')">Add</button>
-                    @if($personalContacts->count())
-                        <button class="ct-btn-pill ct-btn-pill--gray"
-                                onclick="openModal('editPersonalModal')">Edit</button>
-                    @endif
+    {{-- LEFT: Personal Contacts --}}
+    <div class="ct-card">
+        <div class="ct-card-header">
+            <span class="ct-card-title">Personal Contacts</span>
+            <button class="ct-btn-pill" onclick="openModal('addPersonalModal')">Add</button>
+        </div>
+
+            @forelse($personalContacts as $contact)
+            <div class="ct-contact-row">
+                <span class="ct-contact-name">{{ $contact->name }}</span>
+                <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
+                    <button class="ct-btn-pill ct-btn-pill--gray"
+                            style="flex-shrink:0;"
+                            onclick="openEditModal('editPersonal{{ $contact->id }}')">
+                        Edit
+                    </button>
+                    <span class="ct-contact-number">{{ $contact->contact_number }}</span>
                 </div>
             </div>
 
-            @forelse($personalContacts as $contact)
-                <div class="ct-contact-row">
-                    <span class="ct-contact-name">{{ $contact->name }}</span>
-                    <span class="ct-contact-number">{{ $contact->contact_number }}</span>
-                </div>
-            @empty
-                <p class="ct-empty">No personal contacts yet.</p>
-            @endforelse
+            {{-- Individual Edit Modal --}}
+            <div class="ct-modal-bg" id="editPersonal{{ $contact->id }}">
+                <div class="ct-modal">
+                    <button class="ct-modal-close"
+                            onclick="closeModal('editPersonal{{ $contact->id }}')">×</button>
+                    <h3>Edit Contact</h3>
 
-            {{-- Household Contacts --}}
-            @if(auth()->user()->active_family_profile_id && $householdContacts->count())
-                <div style="margin-top:1rem;">
-                    <p style="font-size:.78rem;font-weight:600;color:#1e40af;margin-bottom:.5rem;">
+                    <form method="POST" action="{{ route('contacts.update', $contact) }}">
+                        @csrf
+                        @method('PUT')
+                        <label class="ct-label">Name</label>
+                        <input type="text" name="name" value="{{ $contact->name }}"
+                            class="ct-input" required />
+                        <label class="ct-label">Contact Number</label>
+                        <input type="text" name="contact_number" value="{{ $contact->contact_number }}"
+                            class="ct-input" required />
+                        <button type="submit" class="ct-submit">Save</button>
+                    </form>
+
+                    <form method="POST" action="{{ route('contacts.destroy', $contact) }}"
+                        onsubmit="return confirm('Delete this contact?')"
+                        style="margin-top:.5rem;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                style="width:100%;background:#fee2e2;color:#ef4444;border:none;border-radius:.5rem;padding:.5rem;font-size:.83rem;cursor:pointer;">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @empty
+            <p class="ct-empty">No personal contacts yet.</p>
+        @endforelse
+
+        {{-- Household Contacts --}}
+        @if(auth()->user()->active_family_profile_id)
+            <div style="margin-top:1rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+                    <p style="font-size:.78rem;font-weight:600;color:#1e40af;margin:0;">
                         Household Contacts
                     </p>
-                    @foreach($householdContacts as $contact)
-                        <div class="ct-contact-row">
-                            <span class="ct-contact-name">{{ $contact->name }}</span>
-                            <span class="ct-contact-number">{{ $contact->contact_number }}</span>
-                        </div>
-                    @endforeach
+                    @if(auth()->user()->activeMember()?->is_owner)
+                        <button class="ct-btn-pill"
+                                onclick="openModal('addHouseholdModal')">Add</button>
+                    @endif
                 </div>
-            @endif
 
-            @if(auth()->user()->active_family_profile_id)
-                <button class="ct-btn-pill" style="margin-top:.75rem;width:100%;"
-                        onclick="openModal('addHouseholdModal')">
-                    + Add Household Contact
-                </button>
-            @endif
-        </div>
+                @forelse($householdContacts as $contact)
+                <div class="ct-contact-row">
+                    <span class="ct-contact-name">{{ $contact->name }}</span>
+                    <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
+                        @if(auth()->user()->activeMember()?->is_owner)
+                            <button class="ct-btn-pill ct-btn-pill--gray"
+                                    style="flex-shrink:0;"
+                                    onclick="openEditModal('editHousehold{{ $contact->id }}')">
+                                Edit
+                            </button>
+                        @endif
+                        <span class="ct-contact-number">{{ $contact->contact_number }}</span>
+                    </div>
+                </div>
+
+                    {{-- Individual Edit Modal --}}
+                    @if(auth()->user()->activeMember()?->is_owner)
+                        <div class="ct-modal-bg" id="editHousehold{{ $contact->id }}">
+                            <div class="ct-modal">
+                                <button class="ct-modal-close"
+                                        onclick="closeModal('editHousehold{{ $contact->id }}')">×</button>
+                                <h3>Edit Household Contact</h3>
+
+                                <form method="POST" action="{{ route('contacts.update', $contact) }}">
+                                    @csrf
+                                    @method('PUT')
+                                    <label class="ct-label">Name</label>
+                                    <input type="text" name="name" value="{{ $contact->name }}"
+                                        class="ct-input" required />
+                                    <label class="ct-label">Contact Number</label>
+                                    <input type="text" name="contact_number" value="{{ $contact->contact_number }}"
+                                        class="ct-input" required />
+                                    <button type="submit" class="ct-submit">Save</button>
+                                </form>
+
+                                <form method="POST" action="{{ route('contacts.destroy', $contact) }}"
+                                    onsubmit="return confirm('Delete this contact?')"
+                                    style="margin-top:.5rem;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            style="width:100%;background:#fee2e2;color:#ef4444;border:none;border-radius:.5rem;padding:.5rem;font-size:.83rem;cursor:pointer;">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @endif
+                @empty
+                    <p class="ct-empty">No household contacts yet.</p>
+                @endforelse
+            </div>
+        @endif
+    </div>
 
         {{-- RIGHT: Emergency Hotlines --}}
         <div class="ct-card">
@@ -114,9 +184,7 @@
                 </form>
             </div>
 
-            @php
-                $displayHotlines = session('filtered_hotlines') ?? $hotlines;
-            @endphp
+            @php $displayHotlines = session('filtered_hotlines') ?? $hotlines; @endphp
 
             @forelse($displayHotlines as $hotline)
                 <div class="ct-hotline-row">
@@ -133,6 +201,7 @@
                 </p>
             @endforelse
         </div>
+
     </div>
 </div>
 
@@ -146,11 +215,9 @@
             <label class="ct-label">Name</label>
             <input type="text" name="name" class="ct-input" placeholder="e.g. Mother" required />
             @error('name') <span style="color:red;font-size:.75rem;">{{ $message }}</span> @enderror
-
             <label class="ct-label">Contact Number</label>
             <input type="text" name="contact_number" class="ct-input" placeholder="e.g. 09171234567" required />
             @error('contact_number') <span style="color:red;font-size:.75rem;">{{ $message }}</span> @enderror
-
             <button type="submit" class="ct-submit">Add Contact</button>
         </form>
     </div>
@@ -166,11 +233,9 @@
             <label class="ct-label">Name</label>
             <input type="text" name="name" class="ct-input" placeholder="e.g. Barangay Captain" required />
             @error('name') <span style="color:red;font-size:.75rem;">{{ $message }}</span> @enderror
-
             <label class="ct-label">Contact Number</label>
             <input type="text" name="contact_number" class="ct-input" placeholder="e.g. 09171234567" required />
             @error('contact_number') <span style="color:red;font-size:.75rem;">{{ $message }}</span> @enderror
-
             <button type="submit" class="ct-submit">Add Contact</button>
         </form>
     </div>
@@ -182,26 +247,64 @@
         <button class="ct-modal-close" onclick="closeModal('editPersonalModal')">×</button>
         <h3>Edit Personal Contacts</h3>
         @foreach($personalContacts as $contact)
-            <form method="POST" action="{{ route('contacts.update', $contact) }}"
-                  style="background:#f8fafc;border-radius:.5rem;padding:.75rem;margin-bottom:.75rem;">
-                @csrf @method('PUT')
-                <input type="text" name="name" value="{{ $contact->name }}"
-                       class="ct-input" required />
-                <input type="text" name="contact_number" value="{{ $contact->contact_number }}"
-                       class="ct-input" required />
-                <div style="display:flex;gap:.5rem;">
-                    <button type="submit" class="ct-submit" style="flex:1;">Save</button>
-                    <form method="POST" action="{{ route('contacts.destroy', $contact) }}"
-                          onsubmit="return confirm('Delete this contact?')" style="flex:1;margin:0;">
-                        @csrf @method('DELETE')
-                        <button type="submit"
-                                style="width:100%;background:#fee2e2;color:#ef4444;border:none;border-radius:.5rem;padding:.5rem;font-size:.83rem;cursor:pointer;">
-                            Delete
-                        </button>
-                    </form>
-                </div>
-            </form>
+            <div style="background:#f8fafc;border-radius:.5rem;padding:.75rem;margin-bottom:.75rem;">
+                <form method="POST" action="{{ route('contacts.update', $contact) }}">
+                    @csrf
+                    @method('PUT')
+                    <input type="text" name="name" value="{{ $contact->name }}"
+                           class="ct-input" required />
+                    <input type="text" name="contact_number" value="{{ $contact->contact_number }}"
+                           class="ct-input" required />
+                    <button type="submit" class="ct-submit">Save</button>
+                </form>
+                <form method="POST" action="{{ route('contacts.destroy', $contact) }}"
+                      onsubmit="return confirm('Delete this contact?')"
+                      style="margin-top:.5rem;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            style="width:100%;background:#fee2e2;color:#ef4444;border:none;border-radius:.5rem;padding:.5rem;font-size:.83rem;cursor:pointer;">
+                        Delete
+                    </button>
+                </form>
+            </div>
         @endforeach
+    </div>
+</div>
+
+{{-- Edit Household Contacts Modal --}}
+<div class="ct-modal-bg" id="editHouseholdModal">
+    <div class="ct-modal" style="max-height:80vh;overflow-y:auto;">
+        <button class="ct-modal-close" onclick="closeModal('editHouseholdModal')">×</button>
+        <h3>Edit Household Contacts</h3>
+        @foreach($householdContacts as $contact)
+            <div style="background:#f8fafc;border-radius:.5rem;padding:.75rem;margin-bottom:.75rem;">
+                <form method="POST" action="{{ route('contacts.update', $contact) }}">
+                    @csrf
+                    @method('PUT')
+                    <input type="text" name="name" value="{{ $contact->name }}"
+                           class="ct-input" required />
+                    <input type="text" name="contact_number" value="{{ $contact->contact_number }}"
+                           class="ct-input" required />
+                    <button type="submit" class="ct-submit">Save</button>
+                </form>
+                <form method="POST" action="{{ route('contacts.destroy', $contact) }}"
+                      onsubmit="return confirm('Delete this contact?')"
+                      style="margin-top:.5rem;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            style="width:100%;background:#fee2e2;color:#ef4444;border:none;border-radius:.5rem;padding:.5rem;font-size:.83rem;cursor:pointer;">
+                        Delete
+                    </button>
+                </form>
+            </div>
+        @endforeach
+        @if($householdContacts->isEmpty())
+            <p style="text-align:center;color:#94a3b8;font-size:.83rem;padding:1rem 0;">
+                No household contacts yet.
+            </p>
+        @endif
     </div>
 </div>
 
@@ -212,13 +315,17 @@
     function closeModal(id) {
         document.getElementById(id).classList.remove('open');
     }
+    function openEditModal(id) {
+        // Close all modals first then open the target
+        document.querySelectorAll('.ct-modal-bg').forEach(m => m.classList.remove('open'));
+        document.getElementById(id).classList.add('open');
+    }
     document.querySelectorAll('.ct-modal-bg').forEach(bg => {
         bg.addEventListener('click', e => {
             if (e.target === bg) bg.classList.remove('open');
         });
     });
 
-    // Reopen modals on validation errors
     @if($errors->has('name') || $errors->has('contact_number'))
         openModal('addPersonalModal');
     @endif

@@ -157,12 +157,23 @@ class EmergencyContactController extends Controller
         $user = auth()->user();
 
         if ($contact->family_profile_id) {
-            if ($contact->family_profile_id !== $user->active_family_profile_id) {
-                abort(403);
+            // Only the owner can edit/delete household contacts
+            $member = $user->familyMembers()
+                        ->where('family_profile_id', $contact->family_profile_id)
+                        ->first();
+
+            if (!$member) {
+                abort(403, 'You are not a member of this household.');
             }
+
+            if (!$member->is_owner) {
+                abort(403, 'Only the household owner can edit household contacts.');
+            }
+
         } else {
+            // Personal contacts can only be edited by the owner
             if ($contact->user_id !== $user->id) {
-                abort(403);
+                abort(403, 'This is not your contact.');
             }
         }
     }

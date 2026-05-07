@@ -28,42 +28,107 @@
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-1">
 
-                {{-- Household Switcher --}}
-                @if(isset($households) && $households->count() > 1)
-                    <div class="me-4">
-                        <x-dropdown align="right" width="48">
-                            <x-slot name="trigger">
-                                <button class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                    <div>{{ Auth::user()->activeFamilyProfile->household_name ?? 'Select Household' }}</div>
-                                    <div class="ms-1">
-                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                        </svg>
+                {{-- ── ALERTS BELL BUTTON ── --}}
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                    <button @click="open = !open"
+                            class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition focus:outline-none"
+                            title="Alerts">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        @if(isset($unreadAlertCount) && $unreadAlertCount > 0)
+                            <span class="absolute top-0.5 right-0.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full leading-none">
+                                {{ $unreadAlertCount > 9 ? '9+' : $unreadAlertCount }}
+                            </span>
+                        @endif
+                    </button>
+
+                    <div x-show="open" x-transition @click.stop
+                         class="absolute right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
+                         style="display:none; width:420px;">
+                        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
+                            <span style="font-size:1rem; font-weight:700; color:#1e293b; letter-spacing:-0.01em;">Alerts</span>
+                            @if(Auth::user()->is_admin ?? false)
+                                <a href="{{ route('alerts.index') }}" class="text-xs text-blue-500 hover:underline">Manage</a>
+                            @endif
+                        </div>
+                        <div class="overflow-y-auto divide-y divide-gray-50" style="max-height:480px;">
+                            @forelse(isset($recentAlerts) ? $recentAlerts : [] as $alert)
+                                <div style="padding: 0.85rem 1.5rem;" class="hover:bg-gray-50 {{ !($alert->is_read ?? true) ? 'bg-blue-50' : '' }}">
+                                    <div class="flex items-start gap-3">
+                                        @if(($alert->type ?? '') === 'expiry')
+                                            <svg class="w-4 h-4 mt-0.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                                        @else
+                                            <svg class="w-4 h-4 mt-0.5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+                                        @endif
+                                        <div class="flex-1 min-w-0">
+                                            <p style="font-size:0.875rem; font-weight:600; color:#1e293b;" class="truncate">{{ $alert->title }}</p>
+                                            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem; line-height:1.4;" class="line-clamp-2">{{ $alert->message }}</p>
+                                            <p style="font-size:0.72rem; color:#94a3b8; margin-top:0.35rem;">{{ $alert->created_at->diffForHumans() }}</p>
+                                        </div>
                                     </div>
-                                </button>
-                            </x-slot>
-
-                            <x-slot name="content">
-                                @foreach($households as $household)
-                                    <form method="POST" action="{{ route('family.switch', $household) }}">
-                                        @csrf
-                                        <button type="submit" class="w-full text-left block px-4 py-2 text-sm leading-5
-                                            {{ $household->id === Auth::user()->active_family_profile_id
-                                                ? 'font-bold text-blue-600 bg-blue-50'
-                                                : 'text-gray-700 hover:bg-gray-100' }}">
-                                            {{ $household->household_name }}
-                                            @if($household->id === Auth::user()->active_family_profile_id)
-                                                ✓
-                                            @endif
-                                        </button>
-                                    </form>
-                                @endforeach
-                            </x-slot>
-                        </x-dropdown>
+                                </div>
+                            @empty
+                                <div style="padding: 2.5rem 1.5rem; text-align:center; font-size:0.875rem; color:#94a3b8;">No alerts right now.</div>
+                            @endforelse
+                        </div>
                     </div>
-                @endif
+                </div>
+
+                {{-- ── INVITATIONS BUTTON ── --}}
+                <div class="relative me-2" x-data="{ open: false }" @click.outside="open = false">
+                    <button @click="open = !open"
+                            class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition focus:outline-none"
+                            title="Household Invitations">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        @if(isset($pendingInvitationCount) && $pendingInvitationCount > 0)
+                            <span class="absolute top-0.5 right-0.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-blue-500 rounded-full leading-none">
+                                {{ $pendingInvitationCount > 9 ? '9+' : $pendingInvitationCount }}
+                            </span>
+                        @endif
+                    </button>
+
+                    <div x-show="open" x-transition @click.stop
+                         class="absolute right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
+                         style="display:none; width:420px;">
+                        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9;">
+                            <span style="font-size:1rem; font-weight:700; color:#1e293b; letter-spacing:-0.01em;">Household Invitations</span>
+                        </div>
+                        <div class="overflow-y-auto divide-y divide-gray-50" style="max-height:480px;">
+                            @forelse(isset($pendingInvitations) ? $pendingInvitations : [] as $invitation)
+                                <div style="padding: 0.85rem 1.5rem;" class="hover:bg-gray-50">
+                                    <p style="font-size:0.875rem; font-weight:600; color:#1e293b;">
+                                        {{ $invitation->familyProfile->household_name }}
+                                    </p>
+                                    <p style="font-size:0.78rem; color:#64748b; margin-top:0.2rem;">
+                                        Invited by <strong>{{ $invitation->invitedBy->username }}</strong>
+                                        · {{ $invitation->created_at->diffForHumans() }}
+                                    </p>
+                                    <div class="flex gap-2" style="margin-top:0.6rem;">
+                                        <form method="POST" action="{{ route('family.invitation.accept', $invitation) }}">
+                                            @csrf
+                                            <button type="submit" class="hover:bg-blue-600 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#3b82f6; color:#fff; border-radius:999px; border:none; cursor:pointer;">
+                                                Accept
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ route('family.invitation.decline', $invitation) }}">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="hover:bg-gray-200 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#f1f5f9; color:#475569; border-radius:999px; border:none; cursor:pointer;">
+                                                Decline
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @empty
+                                <div style="padding: 2.5rem 1.5rem; text-align:center; font-size:0.875rem; color:#94a3b8;">No pending invitations.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
 
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
@@ -124,27 +189,6 @@
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->username }}</div>  {{-- fixed: was ->name --}}
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
             </div>
-
-            {{-- Responsive Household Switcher --}}
-            @if(isset($households) && $households->count() > 1)
-                <div class="px-4 mt-3">
-                    <p class="text-xs text-gray-400 mb-1">Switch Household</p>
-                    @foreach($households as $household)
-                        <form method="POST" action="{{ route('family.switch', $household) }}">
-                            @csrf
-                            <button type="submit" class="w-full text-left py-2 text-sm
-                                {{ $household->id === Auth::user()->active_family_profile_id
-                                    ? 'font-bold text-blue-600'
-                                    : 'text-gray-600' }}">
-                                {{ $household->household_name }}
-                                @if($household->id === Auth::user()->active_family_profile_id)
-                                    ✓
-                                @endif
-                            </button>
-                        </form>
-                    @endforeach
-                </div>
-            @endif
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">

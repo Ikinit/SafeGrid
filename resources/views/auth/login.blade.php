@@ -9,38 +9,16 @@
         overflow: hidden;
     }
 
-    #waveOverlay {
+    #fadeOverlay {
         position: fixed;
         inset: 0;
+        background: #fff;
         z-index: 200;
         pointer-events: none;
-        overflow: hidden;
+        opacity: 1;
+        transition: opacity 0.5s ease;
     }
 
-    #waveSvg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: 220vw;
-        will-change: left;
-    }
-
-    @keyframes waveReveal {
-        /* slide LEFT */
-        from { left: 0;      }
-        to   { left: -110vw; }
-    }
-
-    @keyframes waveCover {
-        /* slide RIGHT */
-        from { left: -110vw; }
-        to   { left: 0;      }
-    }
-
-    /* ─────────────────────────────────────────────────
-       PAGE LAYOUT
-    ───────────────────────────────────────────────── */
     .page {
         position: relative;
         min-height: 100vh;
@@ -92,7 +70,6 @@
     }
     @media (max-width: 1000px) { .content-wrap { flex-direction: column; gap: 2rem; } }
 
-    /* ── Branding ── */
     .branding {
         display: flex;
         flex-direction: column;
@@ -131,7 +108,6 @@
         text-align: justify;
     }
 
-    /* ── Auth card ── */
     .auth-card {
         background: #fff;
         border-radius: 1.25rem;
@@ -203,26 +179,8 @@
     .btn-submit:disabled { opacity: .65; cursor: default; transform: none; }
 </style>
 
-{{-- ══ Wave Overlay — starts covering the screen (left:0) ══ --}}
-<div id="waveOverlay">
-    <svg id="waveSvg" viewBox="0 0 2200 900" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%"   stop-color="#1d4ed8"/>
-                <stop offset="60%"  stop-color="#3b82f6"/>
-                <stop offset="100%" stop-color="#7BF0FF"/>
-            </linearGradient>
-        </defs>
-        <path d="M0,0 L1150,0 C1150,0 1240,110 1200,230 C1160,350 1270,410 1230,520 C1190,630 1130,660 1170,770 C1210,880 1250,900 1250,900 L0,900 Z"
-              fill="url(#wg)"/>
-        <path d="M0,0 L1100,0 C1100,0 1190,100 1150,220 C1110,340 1220,400 1180,510 C1140,620 1080,650 1120,760 C1160,870 1200,900 1200,900 L0,900 Z"
-              fill="#1e40af" opacity="0.28"/>
-        <path d="M0,0 L1120,0 C1120,0 1200,95 1165,210 C1130,325 1245,390 1205,498 C1165,606 1105,638 1140,748 C1175,858 1215,900 1215,900 L0,900 Z"
-              fill="#93c5fd" opacity="0.15"/>
-    </svg>
-</div>
+<div id="fadeOverlay"></div>
 
-{{-- ══ Page Content ══ --}}
 <div class="page">
     <img src="{{ asset('Vector.png') }}" alt="" class="bg-wave" aria-hidden="true"/>
 
@@ -258,11 +216,11 @@
                 @csrf
 
                 <div class="field-group">
-                    <label for="username">Username</label>
-                    <input id="username" type="text" name="username"
-                           value="{{ old('username') }}"
-                           placeholder="Enter username"
-                           required autofocus autocomplete="username"/>
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email"
+                           value="{{ old('email') }}"
+                           placeholder="Enter Email"
+                           required autofocus autocomplete="email"/>
                 </div>
 
                 <div class="field-group">
@@ -281,47 +239,28 @@
 
 <script>
 (function () {
-    const svg      = document.getElementById('waveSvg');
+    const overlay  = document.getElementById('fadeOverlay');
     const branding = document.getElementById('branding');
     const card     = document.getElementById('authCard');
     const form     = document.getElementById('loginForm');
     const btn      = document.getElementById('submitBtn');
+    const SPEED    = 500;
 
-    const SPEED      = 680; // ms
-    const EASING     = 'cubic-bezier(0.76,0,0.24,1)';
-
-    /* Force a reflow so the browser acknowledges a style change */
-    function reflow() { svg.offsetHeight; }
-
-    /* Slide wave LEFT */
     function revealPage(onDone) {
-        svg.style.animation = 'none';
-        svg.style.left = '0';
-        reflow();
-        svg.style.animation = `waveReveal ${SPEED}ms ${EASING} forwards`;
-        setTimeout(() => {
-            svg.style.animation = 'none';
-            svg.style.left = '-110vw';
-            if (onDone) onDone();
-        }, SPEED);
+        overlay.style.opacity = '0';
+        setTimeout(() => { if (onDone) onDone(); }, SPEED);
     }
 
-    /* Slide wave RIGHT */
     function coverScreen(onDone) {
-        svg.style.animation = 'none';
-        svg.style.left = '-110vw';
-        reflow();
-        svg.style.animation = `waveCover ${SPEED}ms ${EASING} forwards`;
+        overlay.style.opacity = '1';
         if (onDone) setTimeout(onDone, SPEED);
     }
 
-    /* ── ENTRANCE ── */
     revealPage(() => {
         branding.classList.add('visible');
         card.classList.add('visible');
     });
 
-    /* ── NAV LINKS ── */
     document.querySelectorAll('[data-nav-link]').forEach(link => {
         link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
@@ -331,9 +270,6 @@
         });
     });
 
-    /* ── LOGIN FORM ── */
-
-    // Error banner
     const errorBanner = document.getElementById('errorBanner');
 
     function showErrors(messages) {
@@ -347,7 +283,6 @@
 
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
-
         clearErrors();
         btn.disabled = true;
         btn.textContent = 'Logging in…';
@@ -366,34 +301,25 @@
             const isLoginPage = finalUrl.includes('/login') || finalUrl === window.location.href;
 
             if (!response.ok || isLoginPage) {
-
                 const html = await response.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-
-
                 const errorEls = doc.querySelectorAll('.error-banner div, [class*="error"] li, [class*="error"] p, ul[class*="error"] li');
                 let messages = Array.from(errorEls).map(el => el.textContent.trim()).filter(Boolean);
 
                 if (messages.length === 0) {
                     const allText = doc.body.innerText || doc.body.textContent;
-                    if (allText.toLowerCase().includes('credential') || allText.toLowerCase().includes('password')) {
-                        messages = ['These credentials do not match our records.'];
-                    } else {
-                        messages = ['Login failed. Please check your credentials.'];
-                    }
+                    messages = (allText.toLowerCase().includes('credential') || allText.toLowerCase().includes('password'))
+                        ? ['These credentials do not match our records.']
+                        : ['Login failed. Please check your credentials.'];
                 }
 
                 showErrors(messages);
                 btn.disabled = false;
                 btn.textContent = 'LOGIN';
-
             } else {
-                coverScreen(() => {
-                    window.location.href = finalUrl;
-                });
+                coverScreen(() => { window.location.href = finalUrl; });
             }
-
         } catch (err) {
             showErrors(['Something went wrong. Please try again.']);
             btn.disabled = false;
@@ -401,12 +327,11 @@
         }
     });
 
-    /* Back button / bfcache restore */
     window.addEventListener('pageshow', function (e) {
         if (e.persisted) {
             btn.disabled = false;
             btn.textContent = 'LOGIN';
-            svg.style.left = '0';
+            overlay.style.opacity = '1';
             branding.classList.remove('visible');
             card.classList.remove('visible');
             setTimeout(() => revealPage(() => {

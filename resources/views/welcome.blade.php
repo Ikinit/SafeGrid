@@ -17,31 +17,14 @@
         background: #1d4ed8;
     }
 
-    #waveOverlay {
+    #fadeOverlay {
         position: fixed;
         inset: 0;
+        background: #f0f4f8;
         z-index: 200;
         pointer-events: none;
-        overflow: hidden;
-    }
-
-    #waveSvg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 300vh;   /* 3× screen — wavy edge is at ~100vh, slides to -200vh so it's 100vh above screen */
-        will-change: top;
-    }
-
-    @keyframes waveDown {
-        from { top: 0; }
-        to   { top: -200vh; }  /* push entire SVG 200vh up — wavy edge clears screen with 100vh to spare */
-    }
-
-    @keyframes waveUp {
-        from { top: -200vh; }
-        to   { top: 0; }
+        opacity: 1;
+        transition: opacity 0.5s ease;
     }
 
     .page {
@@ -134,62 +117,7 @@
 </head>
 <body>
 
-<div id="waveOverlay">
-    <!--
-        SVG is 100vw × 300vh. Transparent everywhere except the blue wave shape.
-        The shape fills from the top (y=0) down to a wavy bottom edge around y=1000.
-        Everything below the wave edge is transparent — the page shows through.
-
-        At load:       top=0      → wave shape covers the viewport (rows 0–900 of viewBox = 1 screen)
-        After reveal:  top=-200vh → entire SVG is 200vh above screen, completely invisible
-        On cover:      top=-200vh → 0, wave sweeps back down over the page
-    -->
-    <svg id="waveSvg" viewBox="0 0 1600 2700" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="wg" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%"   stop-color="#1d4ed8"/>
-                <stop offset="55%"  stop-color="#3b82f6"/>
-                <stop offset="100%" stop-color="#60a5fa"/>
-            </linearGradient>
-        </defs>
-
-        {{-- Main blue shape: fills top-left corner down to a wavy bottom edge.
-             Starts at top-left (0,0), goes right to (1600,0), then the right
-             edge drops straight to the wavy zone, the wave undulates left-to-right,
-             then closes back up the left side. Everything outside = transparent. --}}
-        <path d="M0,0 L1600,0 L1600,900
-                 C1490,990 1370,950 1250,910
-                 C1200,1020 1080,980 960,940
-                 C910,1050  790,1010 670,970
-                 C620,1080  500,1040 380,1000
-                 C330,1110  210,1070  90,1030
-                 C40,1100   0,1080   0,1080
-                 Z"
-              fill="url(#wg)"/>
-
-        {{-- Depth layer --}}
-        <path d="M0,0 L1600,0 L1600,900
-                 C1480,980 1360,940 1240,900
-                 C1190,1010 1070,970  950,930
-                 C900,1040  780,1000  660,960
-                 C610,1070  490,1030  370,990
-                 C320,1090  200,1055   80,1020
-                 C30,1090    0,1070    0,1070
-                 Z"
-              fill="#1e40af" opacity="0.28"/>
-
-        {{-- Shimmer --}}
-        <path d="M0,0 L1600,0 L1600,900
-                 C1500,995 1380,955 1260,915
-                 C1210,1025 1090,985  970,945
-                 C920,1055  800,1015  680,975
-                 C630,1085  510,1045  390,1005
-                 C340,1105  220,1065  100,1025
-                 C50,1095    0,1075   0,1075
-                 Z"
-              fill="#93c5fd" opacity="0.15"/>
-    </svg>
-</div>
+<div id="fadeOverlay"></div>
 
 <div class="page">
     <div class="blob blob-1"></div>
@@ -216,34 +144,26 @@
 
 <script>
 (function () {
-    const svg  = document.getElementById('waveSvg');
-    const nav  = document.getElementById('topNav');
-    const hero = document.getElementById('hero');
-    const SPEED  = 750;
-    const EASING = 'cubic-bezier(0.76, 0, 0.24, 1)';
-    function reflow() { svg.offsetHeight; }
+    const overlay = document.getElementById('fadeOverlay');
+    const nav     = document.getElementById('topNav');
+    const hero    = document.getElementById('hero');
+    const SPEED   = 500;
+
     function revealPage(onDone) {
-        svg.style.animation = 'none';
-        svg.style.top = '0';
-        reflow();
-        svg.style.animation = `waveDown ${SPEED}ms ${EASING} forwards`;
-        setTimeout(() => {
-            svg.style.animation = 'none';
-            svg.style.top = '-200vh'; /* resting position: fully above screen */
-            if (onDone) onDone();
-        }, SPEED);
+        overlay.style.opacity = '0';
+        setTimeout(() => { if (onDone) onDone(); }, SPEED);
     }
+
     function coverScreen(onDone) {
-        svg.style.animation = 'none';
-        svg.style.top = '-200vh'; /* start from fully above screen */
-        reflow();
-        svg.style.animation = `waveUp ${SPEED}ms ${EASING} forwards`;
+        overlay.style.opacity = '1';
         if (onDone) setTimeout(onDone, SPEED);
     }
+
     revealPage(() => {
         nav.classList.add('visible');
         hero.classList.add('visible');
     });
+
     document.querySelectorAll('[data-nav-link]').forEach(link => {
         link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
@@ -252,11 +172,12 @@
             coverScreen(() => { window.location.href = href; });
         });
     });
+
     window.addEventListener('pageshow', function (e) {
         if (e.persisted) {
             nav.classList.remove('visible');
             hero.classList.remove('visible');
-            svg.style.top = '0';
+            overlay.style.opacity = '1';
             setTimeout(() => revealPage(() => {
                 nav.classList.add('visible');
                 hero.classList.add('visible');

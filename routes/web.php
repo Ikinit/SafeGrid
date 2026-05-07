@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FamilyProfileController;
 use App\Http\Controllers\GoBagController;
 use App\Http\Controllers\EmergencyContactController;
+use App\Http\Controllers\AlertController;
 use Illuminate\Support\Facades\Route;
 
 // Guest
@@ -39,6 +40,9 @@ Route::middleware(['auth', 'check.household'])->group(function () {
     Route::post('/family/invite', [FamilyProfileController::class, 'inviteMember'])->name('family.invite');
     Route::post('/family/invitation/{invitation}/accept', [FamilyProfileController::class, 'acceptInvitation'])->name('family.invitation.accept');
     Route::post('/family/invitation/{invitation}/decline', [FamilyProfileController::class, 'declineInvitation'])->name('family.invitation.decline');
+    Route::post('/family/invitation/{invitation}/approve-request', [FamilyProfileController::class, 'approveJoinRequest'])->name('family.invitation.approve-request');
+    Route::post('/family/invitation/{invitation}/decline-request', [FamilyProfileController::class, 'declineJoinRequest'])->name('family.invitation.decline-request');
+    Route::delete('/family/invitation/{invitation}/cancel', [FamilyProfileController::class, 'cancelJoinRequest'])->name('family.invitation.cancel');
     Route::put('/family/member/{member}/role', [FamilyProfileController::class, 'updateRole'])->name('family.member.role');
     Route::delete('/family/member/{member}', [FamilyProfileController::class, 'removeMember'])->name('family.member.remove');
     Route::post('/family/location', [FamilyProfileController::class, 'updateLocation'])->name('family.location');
@@ -67,6 +71,16 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/gobag/family/{item}', [GoBagController::class, 'updateFamily'])->name('gobag.family.update');
         Route::delete('/gobag/family/{item}', [GoBagController::class, 'destroyFamily'])->name('gobag.family.destroy');
     });
+});
+
+// Alerts
+Route::middleware('auth')->group(function () {
+    Route::get('/alerts',              [AlertController::class, 'index']  )->name('alerts.index');
+    Route::get('/alerts/create',       [AlertController::class, 'create'] )->name('alerts.create');
+    Route::post('/alerts',             [AlertController::class, 'store']  )->name('alerts.store');
+    Route::get('/alerts/{alert}/edit', [AlertController::class, 'edit']   )->name('alerts.edit');
+    Route::put('/alerts/{alert}',      [AlertController::class, 'update'] )->name('alerts.update');
+    Route::delete('/alerts/{alert}',   [AlertController::class, 'destroy'])->name('alerts.destroy');
 });
 
 require __DIR__.'/auth.php';

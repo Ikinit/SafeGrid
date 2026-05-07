@@ -6,6 +6,7 @@ use App\Http\Controllers\GoBagController;
 use App\Http\Controllers\EmergencyContactController;
 use App\Http\Controllers\AlertController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 
 // Guest
 Route::get('/', function () {
@@ -82,5 +83,12 @@ Route::middleware('auth')->group(function () {
     Route::put('/alerts/{alert}',      [AlertController::class, 'update'] )->name('alerts.update');
     Route::delete('/alerts/{alert}',   [AlertController::class, 'destroy'])->name('alerts.destroy');
 });
+
+// Dashboard
+Route::get('/', [DashboardController::class, 'guest'])->name('home');
+
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 require __DIR__.'/auth.php';

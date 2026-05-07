@@ -5,18 +5,16 @@ use App\Http\Controllers\FamilyProfileController;
 use App\Http\Controllers\GoBagController;
 use App\Http\Controllers\EmergencyContactController;
 use App\Http\Controllers\AlertController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\Route;
 
 // Guest
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [DashboardController::class, 'guest'])->name('home');
 
 // Dashboard
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'check.household'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified', 'check.household'])
+    ->name('dashboard');
 
 // Breeze default profile
 Route::middleware('auth')->group(function () {
@@ -30,6 +28,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding', [FamilyProfileController::class, 'onboarding'])->name('onboarding.index');
     Route::post('/onboarding/create', [FamilyProfileController::class, 'createHousehold'])->name('onboarding.create');
     Route::post('/onboarding/join', [FamilyProfileController::class, 'joinHousehold'])->name('onboarding.join');
+
+    // Cancel a self-initiated join request — must be auth-only (NOT check.household),
+    // because the user cancelling has no active household yet.
+    Route::delete('/family/invitation/{invitation}/cancel', [FamilyProfileController::class, 'cancelJoinRequest'])->name('family.invitation.cancel');
+
+    // Accept / Decline invitations also work without an active household
+    Route::post('/family/invitation/{invitation}/accept', [FamilyProfileController::class, 'acceptInvitation'])->name('family.invitation.accept');
+    Route::post('/family/invitation/{invitation}/decline', [FamilyProfileController::class, 'declineInvitation'])->name('family.invitation.decline');
 });
 
 // Family Profile
@@ -39,11 +45,10 @@ Route::middleware(['auth', 'check.household'])->group(function () {
     Route::delete('/family/delete', [FamilyProfileController::class, 'deleteHousehold'])->name('family.delete');
     Route::post('/family/switch/{profile}', [FamilyProfileController::class, 'switchHousehold'])->name('family.switch');
     Route::post('/family/invite', [FamilyProfileController::class, 'inviteMember'])->name('family.invite');
-    Route::post('/family/invitation/{invitation}/accept', [FamilyProfileController::class, 'acceptInvitation'])->name('family.invitation.accept');
-    Route::post('/family/invitation/{invitation}/decline', [FamilyProfileController::class, 'declineInvitation'])->name('family.invitation.decline');
+    // Revoke an owner-sent invitation (different from cancel — this is the OWNER cancelling their own invite)
+    Route::delete('/family/invitation/{invitation}/revoke', [FamilyProfileController::class, 'revokeInvitation'])->name('family.invitation.revoke');
     Route::post('/family/invitation/{invitation}/approve-request', [FamilyProfileController::class, 'approveJoinRequest'])->name('family.invitation.approve-request');
     Route::post('/family/invitation/{invitation}/decline-request', [FamilyProfileController::class, 'declineJoinRequest'])->name('family.invitation.decline-request');
-    Route::delete('/family/invitation/{invitation}/cancel', [FamilyProfileController::class, 'cancelJoinRequest'])->name('family.invitation.cancel');
     Route::put('/family/member/{member}/role', [FamilyProfileController::class, 'updateRole'])->name('family.member.role');
     Route::delete('/family/member/{member}', [FamilyProfileController::class, 'removeMember'])->name('family.member.remove');
     Route::post('/family/location', [FamilyProfileController::class, 'updateLocation'])->name('family.location');
@@ -83,12 +88,5 @@ Route::middleware('auth')->group(function () {
     Route::put('/alerts/{alert}',      [AlertController::class, 'update'] )->name('alerts.update');
     Route::delete('/alerts/{alert}',   [AlertController::class, 'destroy'])->name('alerts.destroy');
 });
-
-// Dashboard
-Route::get('/', [DashboardController::class, 'guest'])->name('home');
-
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
 
 require __DIR__.'/auth.php';

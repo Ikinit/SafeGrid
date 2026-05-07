@@ -13,7 +13,6 @@
 
     body {
         font-family: 'Nunito', 'Segoe UI', sans-serif;
-        overflow: hidden;
         background: #1d4ed8;
     }
 

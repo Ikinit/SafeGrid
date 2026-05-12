@@ -6,6 +6,15 @@
     </style>
 
     <div class="dash-container space-y-8">
+
+        <div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="section-title mb-0">Weather Update</h2>
+            </div>
+            <div class="card p-0 overflow-hidden h-[450px]">
+                    <iframe src="https://www.panahon.gov.ph/" width="100%" height="100%" frameborder="0" style="border:0;"></iframe>
+            </div>
+        </div>
         
         <div>
             <div class="flex justify-between items-center mb-4">
@@ -76,23 +85,16 @@
                 </div>
             </div>
         </div>
-
         <div>
-            <h2 class="section-title">Evacuation & Live Weather Hazards</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="card p-0 overflow-hidden h-[450px] relative">
-                    <div class="absolute top-0 left-0 w-full bg-blue-600 text-white text-xs font-bold px-4 py-2 flex justify-between z-10 shadow">
-                        <span>Nearby Evacuation Centers</span>
-                        <span id="locStatus">Locating device...</span>
-                    </div>
-                    <iframe id="evacMap" width="100%" height="100%" frameborder="0" style="border:0; padding-top: 32px;"
-                        src="https://maps.google.com/maps?q=evacuation+center+near+me&t=&z=13&ie=UTF8&iwloc=&output=embed" allowfullscreen>
-                    </iframe>
+            <h2 class="section-title">Evacuation Center</h2>
+            <div class="card p-0 overflow-hidden h-[450px] relative">
+                <div class="absolute top-0 left-0 w-full bg-blue-600 text-white text-xs font-bold px-4 py-2 flex justify-between z-10 shadow">
+                    <span>Nearby Evacuation Centers</span>
+                    <span id="locStatus">Locating device...</span>
                 </div>
-
-                <div class="card p-0 overflow-hidden h-[450px]">
-                    <iframe src="https://www.panahon.gov.ph/" width="100%" height="100%" frameborder="0" style="border:0;"></iframe>
-                </div>
+                <iframe id="evacMap" width="100%" height="100%" frameborder="0" style="border:0; padding-top: 32px;"
+                    src="https://maps.google.com/maps?q=evacuation+center+near+me&t=&z=13&ie=UTF8&iwloc=&output=embed" allowfullscreen>
+                </iframe>
             </div>
         </div>
     </div>

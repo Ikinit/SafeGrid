@@ -12,13 +12,28 @@ class FamilyProfileController extends Controller
 {
     public function onboarding()
     {
-        $invitations     = auth()->user()->pendingInvitations()->with('familyProfile')->get();
-        $households      = auth()->user()->familyProfiles;
-        $pendingRequests = HouseholdInvitation::where('invited_user_id', auth()->id())
+        $user = auth()->user();
+
+        if ($user->active_family_profile_id) {
+            return redirect()->route('family.index');
+        }
+
+        // Only fetch invitations that were sent BY an owner (invited_by is NOT null)
+        $invitations = HouseholdInvitation::where('invited_user_id', $user->id)
+                            ->where('status', 'pending')
+                            ->whereNotNull('invited_by')
+                            ->with(['familyProfile', 'invitedBy'])
+                            ->get();
+
+        // Only fetch join requests initiated by the user (invited_by IS null)
+        $pendingRequests = HouseholdInvitation::where('invited_user_id', $user->id)
                             ->where('status', 'pending')
                             ->whereNull('invited_by')
                             ->with('familyProfile')
                             ->get();
+
+        $households = $user->familyProfiles;
+
         return view('family.onboarding', compact('invitations', 'households', 'pendingRequests'));
     }
 

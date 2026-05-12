@@ -15,10 +15,7 @@
     >{{ __('Delete Account') }}</x-danger-button>
 
     <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
-        <form method="post" action="{{ route('profile.destroy') }}" class="p-6">
-            @csrf
-            @method('delete')
-
+        <form id="profileDeleteForm" onsubmit="submitProfileDelete(event)" class="p-6">
             <h2 class="text-lg font-medium text-gray-900">
                 {{ __('Are you sure you want to delete your account?') }}
             </h2>
@@ -38,7 +35,7 @@
                     placeholder="{{ __('Password') }}"
                 />
 
-                <x-input-error :messages="$errors->userDeletion->get('password')" class="mt-2" />
+                <div id="deletePasswordError" class="text-red-600 text-sm mt-2 font-medium"></div>
             </div>
 
             <div class="mt-6 flex justify-end">

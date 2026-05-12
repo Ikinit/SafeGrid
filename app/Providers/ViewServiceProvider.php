@@ -38,28 +38,25 @@ class ViewServiceProvider extends ServiceProvider
                 ->where('expiry_date', '<=', $deadline)
                 ->get()
                 ->each(function (GoBagItems $item) use ($user) {
-                    $exists = Alert::where('type', 'expiry')
-                        ->where('checklist_item_id', $item->id)
-                        ->where('user_id', $user->id)
-                        ->whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id))
-                        ->exists();
-
-                    if ($exists) return;
-
                     $expired = $item->expiry_date->lt(now());
                     $days    = abs((int) now()->diffInDays($item->expiry_date, false));
 
-                    Alert::create([
-                        'type'              => 'expiry',
-                        'user_id'           => $user->id,
-                        'checklist_item_id' => $item->id,
-                        'title'             => $expired
-                            ? "⚠️ \"{$item->name}\" has expired"
-                            : "⏰ \"{$item->name}\" expires in {$days} day(s)",
-                        'message'           => $expired
-                            ? "\"{$item->name}\" ({$item->category}) has expired. Please replace it to keep your go-bag ready."
-                            : "\"{$item->name}\" ({$item->category}) will expire in {$days} day(s). Consider restocking soon.",
-                    ]);
+                    // 🟢 FIX: Use updateOrCreate to ensure only ONE alert exists per item
+                    Alert::updateOrCreate(
+                        [
+                            'type'              => 'expiry',
+                            'user_id'           => $user->id,
+                            'checklist_item_id' => $item->id,
+                        ],
+                        [
+                            'title'             => $expired
+                                ? "⚠️ \"{$item->name}\" has expired"
+                                : "⏰ \"{$item->name}\" expires in {$days} day(s)",
+                            'message'           => $expired
+                                ? "\"{$item->name}\" ({$item->category}) has expired. Please replace it to keep your go-bag ready."
+                                : "\"{$item->name}\" ({$item->category}) will expire in {$days} day(s). Consider restocking soon.",
+                        ]
+                    );
                 });
 
             // ── Auto expiry check — family go-bag items ───────────
@@ -69,28 +66,25 @@ class ViewServiceProvider extends ServiceProvider
                     ->where('expiry_date', '<=', $deadline)
                     ->get()
                     ->each(function (GoBagItemsFamily $item) use ($user) {
-                        $exists = Alert::where('type', 'expiry')
-                            ->where('checklist_item_family_id', $item->id)
-                            ->where('user_id', $user->id)
-                            ->whereDoesntHave('reads', fn ($q) => $q->where('user_id', $user->id))
-                            ->exists();
-
-                        if ($exists) return;
-
                         $expired = $item->expiry_date->lt(now());
                         $days    = abs((int) now()->diffInDays($item->expiry_date, false));
 
-                        Alert::create([
-                            'type'                     => 'expiry',
-                            'user_id'                  => $user->id,
-                            'checklist_item_family_id' => $item->id,
-                            'title'                    => $expired
-                                ? "⚠️ Family item \"{$item->name}\" has expired"
-                                : "⏰ Family item \"{$item->name}\" expires in {$days} day(s)",
-                            'message'                  => $expired
-                                ? "Family go-bag item \"{$item->name}\" ({$item->category}) has expired. Please replace it."
-                                : "Family go-bag item \"{$item->name}\" ({$item->category}) will expire in {$days} day(s). Consider restocking soon.",
-                        ]);
+                        // 🟢 FIX: Use updateOrCreate to ensure only ONE alert exists per family item
+                        Alert::updateOrCreate(
+                            [
+                                'type'                     => 'expiry',
+                                'user_id'                  => $user->id,
+                                'checklist_item_family_id' => $item->id,
+                            ],
+                            [
+                                'title'                    => $expired
+                                    ? "⚠️ Family item \"{$item->name}\" has expired"
+                                    : "⏰ Family item \"{$item->name}\" expires in {$days} day(s)",
+                                'message'                  => $expired
+                                    ? "Family go-bag item \"{$item->name}\" ({$item->category}) has expired. Please replace it."
+                                    : "Family go-bag item \"{$item->name}\" ({$item->category}) will expire in {$days} day(s). Consider restocking soon.",
+                            ]
+                        );
                     });
             }
 

@@ -16,7 +16,7 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link :href="route('family.index')" :active="request()->routeIs('family.*')">
-                        {{ __('Family Profile') }}
+                        {{ __('Household Profile') }}
                     </x-nav-link>
                     <x-nav-link :href="route('gobag.index')" :active="request()->routeIs('gobag.*')">
                         {{ __('Go Bag') }}
@@ -32,14 +32,14 @@
 
                 {{-- ── ALERTS BELL BUTTON ── --}}
                 <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                    <button @click="open = !open"
+                    <button @click="open = !open" onclick="markAlertsAsRead()"
                             class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition focus:outline-none"
                             title="Alerts">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         @if(isset($unreadAlertCount) && $unreadAlertCount > 0)
-                            <span class="absolute top-0.5 right-0.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full leading-none">
+                            <span id="alertBadge" class="absolute top-0.5 right-0.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full leading-none">
                                 {{ $unreadAlertCount > 9 ? '9+' : $unreadAlertCount }}
                             </span>
                         @endif
@@ -105,22 +105,27 @@
                                         {{ $invitation->familyProfile->household_name }}
                                     </p>
                                     <p style="font-size:0.78rem; color:#64748b; margin-top:0.2rem;">
-                                        Invited by <strong>{{ $invitation->invitedBy->username }}</strong>
+                                        @if($invitation->invitedBy)
+                                            Invited by <strong>{{ $invitation->invitedBy->username }}</strong>
+                                        @else
+                                            <strong>Join Request Sent</strong> (Waiting for approval)
+                                        @endif
                                         · {{ $invitation->created_at->diffForHumans() }}
                                     </p>
+                                    
                                     <div class="flex gap-2" style="margin-top:0.6rem;">
-                                        <form method="POST" action="{{ route('family.invitation.accept', $invitation) }}">
-                                            @csrf
-                                            <button type="submit" class="hover:bg-blue-600 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#3b82f6; color:#fff; border-radius:999px; border:none; cursor:pointer;">
+                                        @if($invitation->invitedBy)
+                                            <button type="button" onclick="handleNavInvitation({{ $invitation->id }}, 'accept')" class="hover:bg-blue-600 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#3b82f6; color:#fff; border-radius:999px; border:none; cursor:pointer;">
                                                 Accept
                                             </button>
-                                        </form>
-                                        <form method="POST" action="{{ route('family.invitation.decline', $invitation) }}">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="hover:bg-gray-200 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#f1f5f9; color:#475569; border-radius:999px; border:none; cursor:pointer;">
+                                            <button type="button" onclick="handleNavInvitation({{ $invitation->id }}, 'decline')" class="hover:bg-gray-200 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#f1f5f9; color:#475569; border-radius:999px; border:none; cursor:pointer;">
                                                 Decline
                                             </button>
-                                        </form>
+                                        @else
+                                            <button type="button" onclick="handleNavInvitation({{ $invitation->id }}, 'cancel')" class="hover:bg-red-600 transition" style="padding:0.3rem 1rem; font-size:0.78rem; font-weight:600; background:#ef4444; color:#fff; border-radius:999px; border:none; cursor:pointer;">
+                                                Cancel Request
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             @empty
@@ -208,3 +213,44 @@
         </div>
     </div>
 </nav>
+<script>
+    function markAlertsAsRead() {
+        const badge = document.getElementById('alertBadge');
+        
+        // If the badge exists (meaning there are unread alerts)
+        if (badge && badge.style.display !== 'none') {
+
+            badge.style.display = 'none';
+
+            fetch('/api/alerts', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).catch(err => console.error('Failed to sync alert status:', err));
+        }
+    }
+
+    async function handleNavInvitation(id, action) {
+        const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        try {
+            const method = action === 'accept' ? 'POST' : 'DELETE';
+            const res = await fetch(`/api/family/invitation/${id}/${action}`, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            });
+            
+            if (res.ok) {
+                if(action === 'accept') window.location.href = '/family'; 
+                else window.location.reload();
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to process invitation.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('A network error occurred.');
+        }
+    }
+</script>

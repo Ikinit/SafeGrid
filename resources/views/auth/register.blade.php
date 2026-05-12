@@ -269,11 +269,13 @@
         if (onDone) setTimeout(onDone, SPEED);
     }
 
+    // 1. Initial Page Reveal
     revealPage(() => {
         branding.classList.add('visible');
         card.classList.add('visible');
     });
 
+    // 2. Navigation Link Transitions
     document.querySelectorAll('[data-nav-link]').forEach(link => {
         link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
@@ -283,62 +285,19 @@
         });
     });
 
-    const errorBanner = document.getElementById('errorBanner');
-
-    function showErrors(messages) {
-        errorBanner.innerHTML = messages.map(m => `<div>${m}</div>`).join('');
-        errorBanner.style.display = '';
-    }
-
-    function clearErrors() {
-        errorBanner.style.display = 'none';
-    }
-
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        clearErrors();
+    // 3. NATIVE FORM SUBMISSION (Secure and Fast)
+    form.addEventListener('submit', function () {
+        // Disable the button to prevent spam clicks and show loading state
         btn.disabled = true;
         btn.textContent = 'Creating account…';
-
-        const formData = new FormData(form);
-
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                redirect: 'follow',
-            });
-
-            const finalUrl = response.url;
-            const isRegisterPage = finalUrl.includes('/register') || finalUrl === window.location.href;
-
-            if (!response.ok || isRegisterPage) {
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const errorEls = doc.querySelectorAll('.error-banner div, [class*="error"] li, [class*="error"] p, ul[class*="error"] li');
-                let messages = Array.from(errorEls).map(el => el.textContent.trim()).filter(Boolean);
-
-                if (messages.length === 0) {
-                    messages = ['Registration failed. Please check the fields and try again.'];
-                }
-
-                showErrors(messages);
-                btn.disabled = false;
-                btn.textContent = 'SIGN UP';
-            } else {
-                coverScreen(() => { window.location.href = finalUrl; });
-            }
-        } catch (err) {
-            showErrors(['Something went wrong. Please try again.']);
-            btn.disabled = false;
-            btn.textContent = 'SIGN UP';
-        }
+        
+        // Start the fade out while the browser talks to Laravel
+        overlay.style.opacity = '1'; 
     });
 
+    // 4. Handle "Back" Button Browser Cache
     window.addEventListener('pageshow', function (e) {
-        if (e.persisted) {
+        if (e.persisted || (window.performance && window.performance.navigation.type === 2)) {
             btn.disabled = false;
             btn.textContent = 'SIGN UP';
             overlay.style.opacity = '1';
